@@ -19,7 +19,7 @@ export default function Index() {
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <section className="relative overflow-hidden border-b">
-      <div className="pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)] bg-custom-radial" />
+        <div className="pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)] bg-custom-radial" />
         <div className="container py-16 sm:py-24">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
