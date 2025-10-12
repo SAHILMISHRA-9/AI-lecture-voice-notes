@@ -1,51 +1,51 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { normalizeTranscript } from "@/lib/ai";
 
-export function UploadSources({ onTranscript }: { onTranscript: (t: string) => void }) {
+interface UploadSourcesProps {
+  onTranscript: (t: string) => void;
+}
+
+export function UploadSources({ onTranscript }: UploadSourcesProps) {
   const [busy, setBusy] = useState(false);
   const [yt, setYt] = useState("");
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<string | null>(null);
+  const stopRef = useRef(false);
 
-  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => () => { stopRef.current = true; }, []);
+
+  const onPick: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setBusy(true);
-    setProgress(10);
-    setError(null);
+    setBusy(true); setError(null); setProgress(10); setPhase("Uploading"); stopRef.current = false;
 
     try {
-      const base64 = await file.arrayBuffer().then(buf => Buffer.from(buf).toString("base64"));
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const res = await fetch("/api/transcribe-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: base64 }),
-      });
-
+      const res = await fetch("/api/transcribe-file", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Upload failed");
+
       const data = await res.json();
       onTranscript(normalizeTranscript(data.text || ""));
-      setProgress(100);
+      setProgress(100); setPhase(null);
     } catch (err: any) {
       setError(err?.message || "Upload failed");
     } finally {
-      setBusy(false);
-      setProgress(0);
-      e.currentTarget.value = "";
+      setBusy(false); e.currentTarget.value = ""; setPhase(null); setProgress(0);
     }
   };
 
   const onYouTube = async () => {
     if (!yt.trim()) return;
-    setBusy(true);
-    setProgress(20);
-    setError(null);
+
+    setBusy(true); setError(null); setProgress(20); setPhase("Fetching YouTube transcript");
 
     try {
       const res = await fetch("/api/transcribe-youtube", {
@@ -55,14 +55,14 @@ export function UploadSources({ onTranscript }: { onTranscript: (t: string) => v
       });
 
       if (!res.ok) throw new Error("YouTube transcription failed");
+
       const data = await res.json();
       onTranscript(normalizeTranscript(data.text || ""));
-      setProgress(100);
+      setProgress(100); setPhase(null);
     } catch (err: any) {
       setError(err?.message || "YouTube transcription failed");
     } finally {
-      setBusy(false);
-      setProgress(0);
+      setBusy(false); setPhase(null); setProgress(0);
     }
   };
 
@@ -72,21 +72,47 @@ export function UploadSources({ onTranscript }: { onTranscript: (t: string) => v
         <h3 className="font-semibold">Import a lecture</h3>
         <p className="text-sm text-muted-foreground">Upload a video/audio file or paste a YouTube link to auto‑transcribe.</p>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-        <div>
-          <label>Upload file</label>
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onPick({ target: { files: [f] } } as any); }}
+          className="rounded-lg border border-dashed p-3"
+        >
+          <label className="block text-sm font-medium mb-1">Upload file</label>
           <Input type="file" accept="video/*,audio/*" onChange={onPick} disabled={busy} />
+          <p className="mt-2 text-xs text-muted-foreground">Drag & drop a file here</p>
         </div>
+
         <div>
-          <label>YouTube link</label>
+          <label className="block text-sm font-medium mb-1">YouTube link</label>
           <div className="flex gap-2">
-            <Input type="url" value={yt} onChange={e => setYt(e.target.value)} disabled={busy} />
+            <Input
+              type="url"
+              aria-label="YouTube URL"
+              value={yt}
+              onChange={(e) => setYt(e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
+              disabled={busy}
+              className="flex-1"
+            />
             <Button onClick={onYouTube} disabled={busy || !yt.trim()}>Import</Button>
           </div>
         </div>
       </div>
-      {busy && <Progress value={progress} />}
-      {error && <p className="text-red-500">{error}</p>}
+
+      {busy && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{phase ? `${phase}…` : "Processing…"}</span>
+            <span>{progress}%</span>
+          </div>
+          <Progress value={progress} />
+          <p className="text-xs text-muted-foreground">This may take a few minutes for long videos.</p>
+        </div>
+      )}
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </Card>
   );
 }

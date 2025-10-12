@@ -2,36 +2,23 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import FormData from "form-data";
 import fetch from "node-fetch";
 
-interface UploadResponse {
-  upload_url: string;
-}
-
-interface TranscriptResponse {
-  id: string;
-  status: string;
-  text?: string;
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const file = req.body.file; // base64 string from frontend
+    const file = req.body?.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
 
-    const buffer = Buffer.from(file, "base64");
     const form = new FormData();
-    form.append("file", buffer, { filename: "upload.mp3" });
+    form.append("file", file, "lecture.m4a");
 
-    // Upload to AssemblyAI
     const uploadRes = await fetch("https://api.assemblyai.com/v2/upload", {
       method: "POST",
       headers: { authorization: process.env.ASSEMBLYAI_API_KEY! },
       body: form,
     });
 
-    // ✅ Cast unknown to proper type
-    const uploadData = (await uploadRes.json()) as UploadResponse;
+    const uploadData = (await uploadRes.json()) as { upload_url: string };
 
     // Start transcription
     const transcriptRes = await fetch("https://api.assemblyai.com/v2/transcript", {
@@ -43,9 +30,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({ audio_url: uploadData.upload_url }),
     });
 
-    const transcriptData = (await transcriptRes.json()) as TranscriptResponse;
+    const transcriptData = await transcriptRes.json();
 
-    res.status(200).json(transcriptData);
+    // Poll until transcription is complete
+    let transcriptText = "";
+    while (true) {
+      const statusRes = await fetch(
+        `https://api.assemblyai.com/v2/transcript/${transcriptData.id}`,
+        { headers: { authorization: process.env.ASSEMBLYAI_API_KEY! } }
+      );
+      const status = (await statusRes.json()) as { status: string; text?: string; error?: string };
+      if (status.status === "completed") {
+        transcriptText = status.text || "";
+        break;
+      }
+      if (status.status === "error") throw new Error(status.error || "Transcription failed");
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+
+    res.status(200).json({ text: transcriptText });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });
