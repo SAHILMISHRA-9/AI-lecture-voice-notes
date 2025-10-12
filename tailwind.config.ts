@@ -29,11 +29,13 @@ export default {
       boxShadow: {
         glow: "0 10px 30px -10px hsl(var(--primary) / 0.35)",
       },
-      backgroundImage: {
+     backgroundImage: {
   "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
   "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-  "custom-radial": "radial-gradient(1200px 400px at 50% -50px, rgba(59, 130, 246, 0.15), transparent)"
-   },
+  "custom-radial": "radial-gradient(1200px 400px at 50% -50px, rgba(59, 130, 246, 0.15), transparent)", // static blue
+},
+
+
 
       colors: {
         border: "hsl(var(--border))",

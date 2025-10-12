@@ -1,9 +1,5 @@
 {
-  "builds": [
-    { "src": "dist/spa/**", "use": "@vercel/static" },
-    { "src": "dist/server/**/*.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
   ]
 }
