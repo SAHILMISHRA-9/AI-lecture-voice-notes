@@ -9,6 +9,12 @@ interface UploadSourcesProps {
   onTranscript: (t: string) => void;
 }
 
+interface AssemblyAITranscript {
+  text?: string;
+  status: "queued" | "processing" | "completed" | "error";
+  error?: string;
+}
+
 export function UploadSources({ onTranscript }: UploadSourcesProps) {
   const [busy, setBusy] = useState(false);
   const [yt, setYt] = useState("");
@@ -17,9 +23,7 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
   const [phase, setPhase] = useState<string | null>(null);
   const stopRef = useRef(false);
 
-  useEffect(() => {
-    return () => { stopRef.current = true; };
-  }, []);
+  useEffect(() => { return () => { stopRef.current = true; }; }, []);
 
   const onPick: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
@@ -35,14 +39,15 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Upload to Vercel API
-      const res = await fetch("/api/transcribe", {
+      const res = await fetch("/api/transcribe-file", {
         method: "POST",
         body: formData,
       });
 
       if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
+      const data = (await res.json()) as AssemblyAITranscript;
+
+      if (data.status === "error") throw new Error(data.error || "Transcription failed");
 
       onTranscript(normalizeTranscript(data.text || ""));
       setProgress(100);
@@ -59,6 +64,7 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
 
   const onYouTube = async () => {
     if (!yt.trim()) return;
+
     setBusy(true);
     setError(null);
     setProgress(20);
@@ -72,7 +78,9 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
       });
 
       if (!res.ok) throw new Error("YouTube transcription failed");
-      const data = await res.json();
+      const data = (await res.json()) as AssemblyAITranscript;
+
+      if (data.status === "error") throw new Error(data.error || "Transcription failed");
 
       onTranscript(normalizeTranscript(data.text || ""));
       setProgress(100);
@@ -90,7 +98,9 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
     <Card className="p-4 sm:p-6 space-y-4">
       <div>
         <h3 className="font-semibold">Import a lecture</h3>
-        <p className="text-sm text-muted-foreground">Upload a video/audio file or paste a YouTube link to auto‑transcribe.</p>
+        <p className="text-sm text-muted-foreground">
+          Upload a video/audio file or paste a YouTube link to auto‑transcribe.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
@@ -134,7 +144,9 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
             <span>{progress}%</span>
           </div>
           <Progress value={progress} />
-          <p className="text-xs text-muted-foreground">This runs in the background and can take a few minutes for long videos.</p>
+          <p className="text-xs text-muted-foreground">
+            This runs in the background and can take a few minutes for long videos.
+          </p>
         </div>
       )}
 
