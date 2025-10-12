@@ -17,7 +17,9 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
   const [phase, setPhase] = useState<string | null>(null);
   const stopRef = useRef(false);
 
-  useEffect(() => () => { stopRef.current = true; }, []);
+  useEffect(() => {
+    return () => { stopRef.current = true; };
+  }, []);
 
   const onPick: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
@@ -34,9 +36,11 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
 
       const data = await res.json();
       onTranscript(normalizeTranscript(data.text || ""));
-      setProgress(100); setPhase(null);
-    } catch (err: any) {
-      setError(err?.message || "Upload failed");
+      setProgress(100);
+      setPhase(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
     } finally {
       setBusy(false); e.currentTarget.value = ""; setPhase(null); setProgress(0);
     }
@@ -44,7 +48,6 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
 
   const onYouTube = async () => {
     if (!yt.trim()) return;
-
     setBusy(true); setError(null); setProgress(20); setPhase("Fetching YouTube transcript");
 
     try {
@@ -58,9 +61,11 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
 
       const data = await res.json();
       onTranscript(normalizeTranscript(data.text || ""));
-      setProgress(100); setPhase(null);
-    } catch (err: any) {
-      setError(err?.message || "YouTube transcription failed");
+      setProgress(100);
+      setPhase(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
     } finally {
       setBusy(false); setPhase(null); setProgress(0);
     }
@@ -74,11 +79,11 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onPick({ target: { files: [f] } } as any); }}
-          className="rounded-lg border border-dashed p-3"
-        >
+        <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => {
+          e.preventDefault();
+          const f = e.dataTransfer.files?.[0];
+          if (f) onPick({ target: { files: [f] } } as any);
+        }} className="rounded-lg border border-dashed p-3">
           <label className="block text-sm font-medium mb-1">Upload file</label>
           <Input type="file" accept="video/*,audio/*" onChange={onPick} disabled={busy} />
           <p className="mt-2 text-xs text-muted-foreground">Drag & drop a file here</p>
@@ -87,15 +92,7 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
         <div>
           <label className="block text-sm font-medium mb-1">YouTube link</label>
           <div className="flex gap-2">
-            <Input
-              type="url"
-              aria-label="YouTube URL"
-              value={yt}
-              onChange={(e) => setYt(e.target.value)}
-              placeholder="https://youtube.com/watch?v=..."
-              disabled={busy}
-              className="flex-1"
-            />
+            <Input type="url" aria-label="YouTube URL" value={yt} onChange={(e) => setYt(e.target.value)} placeholder="https://youtube.com/watch?v=..." disabled={busy} className="flex-1" />
             <Button onClick={onYouTube} disabled={busy || !yt.trim()}>Import</Button>
           </div>
         </div>
@@ -108,7 +105,6 @@ export function UploadSources({ onTranscript }: UploadSourcesProps) {
             <span>{progress}%</span>
           </div>
           <Progress value={progress} />
-          <p className="text-xs text-muted-foreground">This may take a few minutes for long videos.</p>
         </div>
       )}
 
