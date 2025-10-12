@@ -1,8 +1,17 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import fetch from "node-fetch";
 
+interface AssemblyAITranscript {
+  id: string;
+  status: string;
+  text?: string;
+  error?: string;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
     const { url } = req.body;
@@ -17,8 +26,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({ audio_url: url }),
     });
 
-    const transcript = await r.json();
-    res.status(200).json(transcript);
+    const data: AssemblyAITranscript = await r.json() as AssemblyAITranscript;
+
+    if (data.error) {
+      return res.status(500).json({ error: data.error });
+    }
+
+    res.status(200).json(data);
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });
