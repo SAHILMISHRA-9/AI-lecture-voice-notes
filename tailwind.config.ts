@@ -14,7 +14,17 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Ubuntu", "Cantarell", "Noto Sans", "sans-serif"],
+        sans: [
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "Ubuntu",
+          "Cantarell",
+          "Noto Sans",
+          "sans-serif",
+        ],
       },
       boxShadow: {
         glow: "0 10px 30px -10px hsl(var(--primary) / 0.35)",
@@ -22,6 +32,7 @@ export default {
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "custom-radial": "radial-gradient(1200px 400px at 50% -50px, rgba(var(--primary)/0.15), transparent)",
       },
       colors: {
         border: "hsl(var(--border))",
@@ -75,20 +86,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
