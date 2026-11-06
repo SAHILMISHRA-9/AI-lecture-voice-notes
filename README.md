@@ -4,7 +4,7 @@
 
 Turn lectures, spoken explanations, and ideas into organized notes with AI-powered voice-to-text functionality.
 
-[Live Demo](https://ai-lecture-voice-notes-qbxkzior.vercel.app/) | [GitHub Repository](https://github.com/SAHILMISHRA-9/AI-lecture-voice-notes)
+[Live Demo](https://ai-lecture-voice-notes-qbxkzior8.vercel.app/) | [GitHub Repository](https://github.com/SAHILMISHRA-9/AI-lecture-voice-notes)
 
 ---
 
